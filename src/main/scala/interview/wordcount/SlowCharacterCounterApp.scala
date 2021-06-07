@@ -7,7 +7,6 @@ import akka.stream.scaladsl._
 import interview.wordcount.javatask.{CharacterReader, SlowCharacterReaderImpl}
 
 import java.util.concurrent.TimeUnit
-import scala.collection.mutable
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
@@ -22,32 +21,41 @@ object SlowCharacterCounterApp extends App {
 
   val startTime = System.nanoTime()
 
+  private val parallelism: ReaderId = Runtime.getRuntime.availableProcessors()
+
   val readersNumber = 10
+
   val readers = generateSlowCharReaders(readersNumber)
 
   charSource(readers)
-    .statefulMapConcat {
-      () =>
-        //Accumulates chars to word for every reader
-        //when char is not a Letter, the accumulated word should be saved to storage
-        //then the word should be reset for the reader
-        val readerWordMap = mutable.HashMap.empty[ReaderId, Word]
-        idAndCh =>
+    .statefulMapConcat { () =>
+      //Accumulates chars to word for every reader
+      //when char is not a Letter, the accumulated word should be saved to storage
+      //then the word should be reset for the reader
+      var readerWordMap = Map.empty[ReaderId, Word]
+
+      { idAndCh =>
           val (id, ch) = idAndCh
           if (ch.isLetter) {
             val chLowerCase = ch.toLower
-            readerWordMap.updateWith(id)(x => Option(x.fold(chLowerCase.toString)(_ + chLowerCase)))
-              .foreach(_ => ())
+            val acc = readerWordMap.find(_._1 == id)
+              .fold(chLowerCase.toString)(x => x._2 + chLowerCase)
+            readerWordMap += (id -> acc)
+            Nil
           } else {
-            readerWordMap
+            val word = readerWordMap
               .get(id)
               .filter { value => value.nonEmpty && value.length > 1 }
-              //in a real app I wouldn't use the call here
-              .map(WordCounterStorage.addOrUpdate)
-              readerWordMap.update(id, "")
+              .getOrElse("")
+
+            readerWordMap += (id -> "")
+
+            word :: Nil
           }
-        readerWordMap
+        }
     }.async
+    .filter{_.nonEmpty}
+    .map(WordCounterStorage.count)
     .zipLatest(printSubtotalEvery10Sec)
     .run()
     .onComplete {

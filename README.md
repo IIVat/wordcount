@@ -1,0 +1,1 @@
+Run app: `sbt run`
