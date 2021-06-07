@@ -11,7 +11,6 @@ import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
 
-
 object SlowCharacterCounterApp extends App {
   type ReaderId = Int
   type Word = String

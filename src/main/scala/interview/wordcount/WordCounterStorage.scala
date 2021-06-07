@@ -1,10 +1,7 @@
 package interview.wordcount
 
-import java.util.concurrent.ConcurrentHashMap
-import scala.collection.IterableOnce._
 import scala.collection.immutable.TreeSet
 import scala.collection.mutable
-import scala.jdk.CollectionConverters.ConcurrentMapHasAsScala
 
 object WordCounterStorage {
   implicit val ord: Ordering[(String, Int)] = (x: (String, Int), y: (String, Int)) => {
@@ -18,8 +15,6 @@ object WordCounterStorage {
 
   //mutable Map only for the sake of a performance here
   private val words = mutable.Map[String, Int]()
-
-
 
   def count(k: String): Option[Int] = {
     words.updateWith(k) {
