@@ -6,7 +6,6 @@ import akka.stream._
 import akka.stream.scaladsl._
 import interview.wordcount.javatask.{CharacterReader, SlowCharacterReaderImpl}
 
-import java.io.EOFException
 import java.util.concurrent.TimeUnit
 import scala.collection.mutable
 import scala.concurrent.ExecutionContextExecutor
@@ -41,11 +40,11 @@ object SlowCharacterCounterApp extends App {
               .foreach(_ => ())
           } else {
             readerWordMap
-              .filter { case (_, value) => value.nonEmpty && value.length > 1 }
               .get(id)
+              .filter { value => value.nonEmpty && value.length > 1 }
               //in a real app I wouldn't use the call here
               .map(WordCounterStorage.addOrUpdate)
-              .foreach(_ => readerWordMap.update(id, ""))
+              readerWordMap.update(id, "")
           }
         readerWordMap
     }.async
@@ -53,8 +52,8 @@ object SlowCharacterCounterApp extends App {
     .run()
     .onComplete {
       _ =>
-        WordCounterStorage.printResult()
         println(s"================Final result after ${getElapsedTime(startTime)}:================")
+        WordCounterStorage.printResult()
         sys.terminate()
     }
 
