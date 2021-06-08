@@ -20,8 +20,6 @@ object SlowCharacterCounterApp extends App {
 
   val startTime = System.nanoTime()
 
-  private val parallelism: ReaderId = Runtime.getRuntime.availableProcessors()
-
   val readersNumber = 10
 
   val readers = generateSlowCharReaders(readersNumber)
@@ -44,6 +42,8 @@ object SlowCharacterCounterApp extends App {
           } else {
             val word = readerWordMap
               .get(id)
+              //the filter skips an article 'a' and pronoun 'I'
+              //anyway usually the words are in stopwords list.
               .filter { value => value.nonEmpty && value.length > 1 }
               .getOrElse("")
 
